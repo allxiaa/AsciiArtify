@@ -6,7 +6,10 @@ sudo mv ./kubectl-kubeplugin /usr/local/bin
 
 # You can now invoke your plugin via kubectl:
 ```sh
-kubectl kubeplugin --COMMAND=get --rt=pods --namespace=demo
+kubectl kubeplugin --help
+```
+```sh
+kubectl kubeplugin --COMMAND=top --rt=nodes --namespace=default
 ```
 ```sh
 kubectl kubeplugin --COMMAND=top --rt=nodes --namespace=default
