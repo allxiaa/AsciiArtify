@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# Define command-line arguments
+PLUGIN_VERSION="v0.0.1"
+kubeplugin_NAMESPACE="demo"
+RESOURCE_TYPE="pods"
+COMMAND=$1
+
+print_plugin_version() {
+    echo "${PLUGIN_VERSION}"
+    exit
+}
+
+run_main(){
+
+NAMESPACE=$kubeplugin_NAMESPACE
+#echo $COMMAND, $RESOURCE_TYPE, $NAMESPACE
+kubectl $COMMAND $RESOURCE_TYPE -n $NAMESPACE | tail -n +2 | while read line
+do
+  NAME=$(echo $line | awk '{print $1}')
+  CPU=$(echo $line | awk '{print $2}')
+  MEMORY=$(echo $line | awk '{print $3}')
+
+  echo "Resource: $RESOURCE_TYPE, Namespace: $NAMESPACE, Name: $NAME, CPU: $CPU, Memory: $MEMORY"
+done
+exit 1
+}
+
+print_help() {
+    echo "usage: $0 [-v] | --COMMAND[=]<value> -rt[=]<value> [--namespace[=]<value>]" >&2
+    echo "" >&2
+    echo "-n[--namespace]     Filter by namespace" >&2
+    echo "-rt[=]<value>        Resourse type" >&2
+    echo "--COMMAND[=]<value> The command" >&2
+    echo "-v                  Prints version" >&2
+    echo "--help              Prints help" >&2
+    exit
+}
+
+if [[ -z "$1" ]]; then
+  echo "No argument provided. See --help" >&2
+  exit 1
+fi
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        namespace*) ss2_SUBCOMMAND="namespaces"; shift;;
+        node*) ss_SUBCOMMAND="nodes"; shift;;
+        -n|--namespace)
+            if [[ $# -lt 2 ]]; then
+                echo "Namespace name is required"
+                exit 1
+            fi
+            shift 1
+            ;;
+        --rt=*)
+            if [[ $# == "" ]]; then
+                #echo "The name of kubeconfig context name is required"
+                RESOURCE_TYPE="pods"
+            else
+                RESOURCE_TYPE="${1#*=}";
+            fi
+            shift 1
+            ;;
+        --COMMAND=*)
+            if [ "${1#*=}" == "" ]; then
+                echo "The name of COMMAND name is required"
+                exit 1
+            fi
+            COMMAND="${1#*=}";
+            shift 1
+            ;;
+        -v)
+            print_plugin_version
+            ;;
+        --namespace=*)
+            if [ "${1#*=}" == "" ]; then
+                kubeplugin_NAMESPACE="default"
+            else
+                kubeplugin_NAMESPACE="${1#*=}";
+            fi
+            run_main
+            shift 1
+            ;;
+        --help)
+            print_help
+            ;;
+        -*)
+            echo "Unknown option: $1; See --help" >&2;
+            exit 1
+            ;;
+        *)
+            echo "Unknown argument: $1; See --help" >&2;
+            exit 1
+            ;;
+    esac
+
+done
